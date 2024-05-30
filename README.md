@@ -26,7 +26,7 @@ Trojan 是一种利用 HTTPS 加密协议来传输流量的代理软件，能够
 在 Clash 的配置文件中添加以下内容：
 
 ```yaml
-- {type: trojan, name: '113.31.112.200', server: '113.31.112.200', port: 26578, password: 'eqwlOdsn%2.ds782(dlscw&sKL0kksdn&sds', skip-cert-verify: true}
+- {type: trojan, name: '名字', server: '公网ip', port: 端口, password: '密码', skip-cert-verify: true}
 ```
 **说明**
 - name: 为 Trojan 设置的名字
