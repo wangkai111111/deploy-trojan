@@ -28,7 +28,7 @@ function update_cert(){
     mkdir -p ${cert_pwd}
     if [[ $(command -v openssl) ]]; then
         echo "正在生成证书，路径为: $cert_pwd"
-        openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
             -keyout ${private_file} \
             -out ${certificate_file} \
             -subj "/C=CN/ST=/L=/O=/CN=$1"
@@ -36,7 +36,7 @@ function update_cert(){
     else
         apt update-y && apt install -y openssl
         echo "正在生成证书，路径为: $cert_pwd"
-        openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
             -keyout ${private_file} \
             -out ${certificate_file} \
             -subj "/C=CN/ST=/L=/O=/CN=$1"

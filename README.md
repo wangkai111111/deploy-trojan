@@ -18,7 +18,7 @@ Trojan 是一种利用 HTTPS 加密协议来传输流量的代理软件，能够
 2. **运行安装脚本：**
 
     ```bash
-    ./install.sh
+    bash deploy_trojan.sh
     ```
 
 ## Clash 配置
