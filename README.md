@@ -11,7 +11,7 @@ Trojan 是一种利用 HTTPS 加密协议来传输流量的代理软件，能够
 1. **克隆仓库到本地：**
 
     ```bash
-    git clone git@github.com:wangkai111111/deploy-trojan.git
+    git clone https://github.com/wangkai111111/deploy-trojan.git
     cd deploy-trojan
     ```
 
