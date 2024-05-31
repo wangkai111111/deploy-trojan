@@ -97,7 +97,7 @@ systemctl status trojan
 function main() {
     read -p "设置trojan的外部端口: " port
     read -p "设置trojan的密码: " passwd
-    read -p "设置域名: \n" domain
+    read -p "设置域名: " domain
     check_env $port $passwd $domain
     echo ""
     echo ""
