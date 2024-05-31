@@ -11,7 +11,7 @@ function check_env(){
         if [[ ! $(command -v trojan) ]]; then
             apt update -y && apt install -y trojan
             cp $trojan_pwd/config.json $trojan_pwd/config.json${date}
-            update_cert
+            update_cert $3
             trojan_cofnig $1 $2
             
         else
@@ -27,17 +27,19 @@ function check_env(){
 function update_cert(){
     mkdir -p ${cert_pwd}
     if [[ $(command -v openssl) ]]; then
+        echo "正在生成证书，路径为: $cert_pwd"
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
             -keyout ${private_file} \
             -out ${certificate_file} \
-            -subj "/C=CN/ST=/L=/O=/CN=example.com"
+            -subj "/C=CN/ST=/L=/O=/CN=$1"
         chmod 777 ${private_file} ${certificate_file}
     else
         apt update-y && apt install -y openssl
+        echo "正在生成证书，路径为: $cert_pwd"
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
             -keyout ${private_file} \
             -out ${certificate_file} \
-            -subj "/C=CN/ST=/L=/O=/CN=example.com"
+            -subj "/C=CN/ST=/L=/O=/CN=$1"
         chmod 777 ${private_file} ${certificate_file}
     fi
 }
@@ -95,11 +97,16 @@ systemctl status trojan
 function main() {
     read -p "设置trojan的外部端口: " port
     read -p "设置trojan的密码: " passwd
-    check_env $port $passwd
+    read -p "设置域名: \n" domain
+    check_env $port $passwd $domain
+    echo ""
+    echo ""
     echo " ======================================="
     echo " trojan连接地址: ${ipaddr}:${port}"
     echo " 密码: ${passwd}"
     echo " ======================================="
+    echo ""
+    echo ""
 }
 
 main
