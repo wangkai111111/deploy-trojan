@@ -1,19 +1,19 @@
-#/bin/bash
+#!/bin/bash
+
 trojan_pwd=/etc/trojan
 cert_pwd=$trojan_pwd/ssl
 private_file=$cert_pwd/private-key.pem
 certificate_file=$cert_pwd/certificate.pem
 date=$(date +"%Y%m%d")
-ipaddr=`ip addr show dev $(ip route show default | awk ' /default/ {print $5}') | grep -i 'inet' | grep -v 'inet6'|awk ' /inet/ {print $2}' | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}'`
+ipaddr=$(ip addr show dev $(ip route show default | awk '/default/ {print $5}') | grep -i 'inet' | grep -v 'inet6' | awk '/inet/ {print $2}' | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}')
 
-function check_env(){
+function check_env() {
     if [[ $(command -v apt) ]]; then
         if [[ ! $(command -v trojan) ]]; then
             apt update -y && apt install -y trojan
             cp $trojan_pwd/config.json $trojan_pwd/config.json${date}
             update_cert $3
-            trojan_cofnig $1 $2
-            
+            trojan_config $1 $2
         else
             echo "存在trojan，要想重新安装请先卸载"
             exit 1
@@ -24,7 +24,7 @@ function check_env(){
     fi
 }
 
-function update_cert(){
+function update_cert() {
     mkdir -p ${cert_pwd}
     if [[ $(command -v openssl) ]]; then
         echo "正在生成证书，路径为: $cert_pwd"
@@ -32,20 +32,19 @@ function update_cert(){
             -keyout ${private_file} \
             -out ${certificate_file} \
             -subj "/C=CN/ST=/L=/O=/CN=$1"
-        chmod 777 ${private_file} ${certificate_file}
+        chmod 600 ${private_file} ${certificate_file}
     else
-        apt update-y && apt install -y openssl
+        apt update -y && apt install -y openssl
         echo "正在生成证书，路径为: $cert_pwd"
         openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
             -keyout ${private_file} \
             -out ${certificate_file} \
             -subj "/C=CN/ST=/L=/O=/CN=$1"
-        chmod 777 ${private_file} ${certificate_file}
+        chmod 600 ${private_file} ${certificate_file}
     fi
 }
 
-
-function trojan_cofnig(){
+function trojan_config() {
     cat > /etc/trojan/config.json <<EOF
 {
     "run_type": "server",
