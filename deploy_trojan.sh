@@ -5,7 +5,49 @@ cert_pwd=$trojan_pwd/ssl
 private_file=$cert_pwd/private-key.pem
 certificate_file=$cert_pwd/certificate.pem
 date=$(date +"%Y%m%d")
-ipaddr=$(ip addr show dev $(ip route show default | awk '/default/ {print $5}') | grep -i 'inet' | grep -v 'inet6' | awk '/inet/ {print $2}' | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}')
+
+# 函数：获取公网IP地址
+function get_public_ip() {
+    local public_ip=""
+    local timeout=5  # 超时时间（秒）
+    
+    # 尝试从ifconfig.me获取公网IP
+    public_ip=$(curl -s -m $timeout ifconfig.me 2>/dev/null)
+    if [[ -n "$public_ip" && $public_ip =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+        echo "$public_ip"
+        return 0
+    fi
+    
+    # 尝试从ipinfo.io/ip获取公网IP
+    public_ip=$(curl -s -m $timeout ipinfo.io/ip 2>/dev/null)
+    if [[ -n "$public_ip" && $public_ip =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+        echo "$public_ip"
+        return 0
+    fi
+    
+    # 尝试从其他常用服务获取公网IP
+    public_ip=$(curl -s -m $timeout icanhazip.com 2>/dev/null)
+    if [[ -n "$public_ip" && $public_ip =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+        echo "$public_ip"
+        return 0
+    fi
+    
+    # 如果所有外部服务都失败，使用本地IP作为备选
+    local local_ip=$(ip addr show dev $(ip route show default | awk '/default/ {print $5}') | grep -i 'inet' | grep -v 'inet6' | awk '/inet/ {print $2}' | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}')
+    if [[ -n "$local_ip" ]]; then
+        echo "$local_ip"
+        echo "警告: 无法获取公网IP，已使用本地IP作为备选" >&2
+        return 1
+    fi
+    
+    # 如果所有方法都失败，返回一个默认值
+    echo "127.0.0.1"
+    echo "错误: 无法获取IP地址，使用默认值127.0.0.1" >&2
+    return 1
+}
+
+# 获取公网IP地址
+ipaddr=$(get_public_ip)
 
 function check_env() {
     if [[ $(command -v apt) ]]; then
@@ -107,7 +149,7 @@ proxies:
     - {type: trojan, name: "${ipaddr}", server: "${ipaddr}", port: ${port}, password: "${passwd}", skip-cert-verify: true}
 proxy-groups:
     - {name: Proxy, type: select, proxies: ["${ipaddr}"]}
-    - {name: 自动选择, type: url-test, proxies: ["日本"], url: 'http://www.gstatic.com/generate_204', interval: 300}
+    - {name: 自动选择, type: url-test, proxies: ["${ipaddr}"], url: 'http://www.gstatic.com/generate_204', interval: 300}
 rules:
     - 'DOMAIN-SUFFIX,mzstatic.com,DIRECT'
     - 'DOMAIN-SUFFIX,akadns.net,DIRECT'
