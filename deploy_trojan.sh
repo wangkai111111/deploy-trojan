@@ -32,7 +32,7 @@ function update_cert() {
             -keyout ${private_file} \
             -out ${certificate_file} \
             -subj "/C=CN/ST=/L=/O=/CN=$1"
-        chmod 600 ${private_file} ${certificate_file}
+        chmod 644 ${private_file} ${certificate_file}
     else
         apt update -y && apt install -y openssl
         echo "正在生成证书，路径为: $cert_pwd"
@@ -40,7 +40,7 @@ function update_cert() {
             -keyout ${private_file} \
             -out ${certificate_file} \
             -subj "/C=CN/ST=/L=/O=/CN=$1"
-        chmod 600 ${private_file} ${certificate_file}
+        chmod 644 ${private_file} ${certificate_file}
     fi
 }
 
