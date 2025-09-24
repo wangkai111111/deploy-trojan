@@ -50,7 +50,9 @@ function get_public_ip() {
 ipaddr=$(get_public_ip)
 
 function check_env() {
+    # 检查系统类型并安装trojan
     if [[ $(command -v apt) ]]; then
+        # Ubuntu/Debian系统
         if [[ ! $(command -v trojan) ]]; then
             apt update -y && apt install -y trojan
             cp $trojan_pwd/config.json $trojan_pwd/config.json${date}
@@ -60,8 +62,42 @@ function check_env() {
             echo "存在trojan，要想重新安装请先卸载"
             exit 1
         fi
+    elif [[ $(command -v dnf) ]]; then
+        # CentOS 8+/Rocky Linux 8+系统
+        if [[ ! $(command -v trojan) ]]; then
+            # 启用EPEL仓库
+            dnf install -y epel-release
+            dnf update -y
+            # 安装trojan
+            dnf install -y trojan
+            # 创建配置目录
+            mkdir -p $trojan_pwd
+            cp /usr/share/doc/trojan/examples/server.json-example $trojan_pwd/config.json 2>/dev/null || :
+            update_cert $3
+            trojan_config $1 $2
+        else
+            echo "存在trojan，要想重新安装请先卸载"
+            exit 1
+        fi
+    elif [[ $(command -v yum) ]]; then
+        # CentOS 7系统
+        if [[ ! $(command -v trojan) ]]; then
+            # 启用EPEL仓库
+            yum install -y epel-release
+            yum update -y
+            # 安装trojan
+            yum install -y trojan
+            # 创建配置目录
+            mkdir -p $trojan_pwd
+            cp /usr/share/doc/trojan/examples/server.json-example $trojan_pwd/config.json 2>/dev/null || :
+            update_cert $3
+            trojan_config $1 $2
+        else
+            echo "存在trojan，要想重新安装请先卸载"
+            exit 1
+        fi
     else
-        echo "目前只支持ubuntu18+，暂不支持别的系统"
+        echo "不支持的系统类型。支持的系统：Ubuntu/Debian、CentOS 7/8+、Rocky Linux"
         exit 1
     fi
 }
@@ -76,7 +112,17 @@ function update_cert() {
             -subj "/C=CN/ST=/L=/O=/CN=$1"
         chmod 644 ${private_file} ${certificate_file}
     else
-        apt update -y && apt install -y openssl
+        # 根据不同系统使用对应的包管理器安装openssl
+        if [[ $(command -v apt) ]]; then
+            apt update -y && apt install -y openssl
+        elif [[ $(command -v dnf) ]]; then
+            dnf install -y openssl
+        elif [[ $(command -v yum) ]]; then
+            yum install -y openssl
+        else
+            echo "无法安装openssl：不支持的系统包管理器"
+            exit 1
+        fi
         echo "正在生成证书，路径为: $cert_pwd"
         openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
             -keyout ${private_file} \
@@ -133,6 +179,31 @@ EOF
 systemctl restart trojan
 systemctl enable trojan
 systemctl status trojan
+}
+
+function start_config_server() {
+    # 启动一个简单的HTTP服务，用于提供Clash配置文件的访问
+    # 检查系统上可用的HTTP服务工具
+    if [[ $(command -v python3) ]]; then
+        # 使用Python 3启动HTTP服务
+        echo "正在启动HTTP服务，用于提供Clash配置文件访问..."
+        python3 -m http.server $1 --bind 0.0.0.0 2>/dev/null &
+        sleep 2  # 给服务启动的时间
+    elif [[ $(command -v python) ]]; then
+        # 使用Python 2启动HTTP服务
+        echo "正在启动HTTP服务，用于提供Clash配置文件访问..."
+        python -m SimpleHTTPServer $1 2>/dev/null &
+        sleep 2  # 给服务启动的时间
+    elif [[ $(command -v busybox) ]] && busybox --list | grep -q httpd; then
+        # 使用BusyBox的httpd启动HTTP服务
+        echo "正在启动HTTP服务，用于提供Clash配置文件访问..."
+        busybox httpd -p 0.0.0.0:$1 -h $(pwd) 2>/dev/null &
+        sleep 2  # 给服务启动的时间
+    else
+        echo "警告: 无法启动HTTP服务提供Clash配置文件访问，请手动获取./clash_trojan_config.yaml文件"
+        return 1
+    fi
+    return 0
 }
 
 function generate_clash_config() {
@@ -753,8 +824,15 @@ function main() {
     echo " trojan连接地址: ${ipaddr}:${port}"
     echo " 密码: ${passwd}"
     echo " 域名: ${domain}"
-    echo " Clash配置文件: ./clash_trojan_config.yaml"
-    echo " ======================================="
+    # 启动HTTP服务，让用户可以通过curl访问Clash配置文件
+    if start_config_server $port; then
+        echo " Clash配置文件: ./clash_trojan_config.yaml"
+        echo " 配置文件URL: http://${ipaddr}:${port}/clash_trojan_config.yaml"
+        echo " 可通过命令获取: curl http://${ipaddr}:${port}/clash_trojan_config.yaml"
+    else
+        echo " Clash配置文件: ./clash_trojan_config.yaml"
+    fi
+    echo " ========================================"
     echo ""
     echo ""
 }

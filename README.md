@@ -14,8 +14,20 @@ Trojan 是一种利用 HTTPS 加密协议来传输流量的代理软件，能够
 ## 系统要求
 
 - Ubuntu 18.04 及以上版本
+- CentOS 7/8 及以上版本
+- Rocky Linux 8 及以上版本
 
 ## 安装步骤
+
+### 方法一：一键部署（推荐）
+
+直接执行以下命令进行一键部署：
+
+```bash
+bash <(curl -L https://raw.githubusercontent.com/wangkai111111/deploy-trojan/master/deploy_trojan.sh)
+```
+
+### 方法二：克隆仓库安装
 
 1. **克隆仓库到本地：**
 
@@ -89,3 +101,6 @@ Trojan 是一种利用 HTTPS 加密协议来传输流量的代理软件，能够
 - **端口被占用**：脚本会自动检测端口占用情况，生成未被占用的端口
 - **密码忘记**：可以查看 `/etc/trojan/config.json` 文件获取密码
 - **服务无法启动**：可以使用 `systemctl status trojan` 查看服务状态和错误信息
+- **CentOS/Rocky Linux相关问题**：
+  - 确保已启用EPEL仓库：`yum install epel-release` 或 `dnf install epel-release`
+  - 如果找不到trojan包，请检查EPEL仓库是否已正确启用
